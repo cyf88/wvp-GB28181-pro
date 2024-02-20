@@ -2,7 +2,8 @@
   <div id="channelList" style="width: 100%">
     <div class="page-header">
       <div class="page-title">
-        <el-button icon="el-icon-back" size="mini" style="font-size: 20px; color: #000;" type="text" @click="showDevice" ></el-button>
+        <el-button icon="el-icon-back" size="mini" style="font-size: 20px; color: #000;" type="text"
+                   @click="showDevice"></el-button>
         <el-divider direction="vertical"></el-divider>
         通道列表
       </div>
@@ -40,7 +41,7 @@
     </div>
     <devicePlayer ref="devicePlayer"></devicePlayer>
     <el-container v-loading="isLoging" style="height: 82vh;">
-      <el-aside width="auto" style="height: 82vh; background-color: #ffffff; overflow: auto" v-if="showTree">
+      <el-aside width="300px" style="height: 82vh; background-color: #ffffff; overflow: auto" v-if="showTree">
         <DeviceTree ref="deviceTree" :device="device" :onlyCatalog="true" :clickEvent="treeNodeClickEvent"></DeviceTree>
       </el-aside>
       <el-main style="padding: 5px;">
@@ -124,48 +125,71 @@
           </el-table-column>
 
 
-          <el-table-column label="操作" min-width="340" fixed="right">
+          <el-table-column label="操作" min-width="340" fixed="right" align="center">
             <template slot-scope="scope">
-              <el-button size="medium" v-bind:disabled="device == null || device.online === 0" icon="el-icon-video-play"
-                         type="text" @click="sendDevicePush(scope.row)">播放
-              </el-button>
-              <el-button size="medium" v-bind:disabled="device == null || device.online === 0"
-                         icon="el-icon-switch-button"
-                         type="text" style="color: #f56c6c" v-if="!!scope.row.streamId"
-                         @click="stopDevicePush(scope.row)">停止
-              </el-button>
-              <el-divider direction="vertical"></el-divider>
-              <el-button
-                v-if="scope.row.edit"
-                size="medium"
-                type="text"
-                icon="el-icon-edit-outline"
-                @click="handleSave(scope.row)"
-              >
-                保存
-              </el-button>
-              <el-button
-                v-else
-                size="medium"
-                type="text"
-                icon="el-icon-edit"
-                @click="handleEdit(scope.row)"
-              >
-                编辑
-              </el-button>
-              <el-divider direction="vertical"></el-divider>
-              <el-button size="medium" icon="el-icon-s-open" type="text"
-                         v-if="scope.row.subCount > 0 || scope.row.parental === 1"
-                         @click="changeSubchannel(scope.row)">查看
-              </el-button>
-              <el-divider v-if="scope.row.subCount > 0 || scope.row.parental === 1" direction="vertical"></el-divider>
-              <el-button size="medium" v-bind:disabled="device == null || device.online === 0"
-                         icon="el-icon-video-camera"
-                         type="text" @click="queryRecords(scope.row)">设备录像
-              </el-button>
-              <el-button size="medium" v-bind:disabled="device == null || device.online === 0" icon="el-icon-cloudy"
-                         type="text" @click="queryCloudRecords(scope.row)">云端录像
-              </el-button>
+              <div v-if="scope.row.subCount > 0 || scope.row.parental === 1">
+                <el-button size="medium" icon="el-icon-s-open" type="text"
+                           @click="changeSubchannel(scope.row)">查看
+                </el-button>
+                <el-divider direction="vertical"></el-divider>
+                <el-button
+                  v-if="scope.row.edit"
+                  size="medium"
+                  type="text"
+                  icon="el-icon-edit-outline"
+                  @click="handleSave(scope.row)"
+                >
+                  保存
+                </el-button>
+                <el-button
+                  v-else
+                  size="medium"
+                  type="text"
+                  icon="el-icon-edit"
+                  @click="handleEdit(scope.row)"
+                >
+                  编辑
+                </el-button>
+              </div>
+              <div v-else>
+                <el-button size="medium" v-bind:disabled="device == null || !device.onLine || !scope.row.status"
+                           icon="el-icon-video-play"
+                           type="text" @click="sendDevicePush(scope.row)">播放
+                </el-button>
+                <el-button size="medium" v-bind:disabled="device == null || !device.onLine || !scope.row.status"
+                           icon="el-icon-switch-button"
+                           type="text" style="color: #f56c6c" v-if="!!scope.row.streamId"
+                           @click="stopDevicePush(scope.row)">停止
+                </el-button>
+                <el-divider direction="vertical"></el-divider>
+                <el-button
+                  v-if="scope.row.edit"
+                  size="medium"
+                  type="text"
+                  icon="el-icon-edit-outline"
+                  @click="handleSave(scope.row)"
+                >
+                  保存
+                </el-button>
+                <el-button
+                  v-else
+                  size="medium"
+                  type="text"
+                  icon="el-icon-edit"
+                  @click="handleEdit(scope.row)"
+                >
+                  编辑
+                </el-button>
+                <el-divider direction="vertical"></el-divider>
+                <el-button size="medium" v-bind:disabled="device == null || !device.onLine || !scope.row.status"
+                           icon="el-icon-video-camera"
+                           type="text" @click="queryRecords(scope.row)">设备录像
+                </el-button>
+                <el-button size="medium" v-bind:disabled="device == null || !device.onLine || !scope.row.status"
+                           icon="el-icon-cloudy"
+                           type="text" @click="queryCloudRecords(scope.row)">云端录像
+                </el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -235,15 +259,15 @@ export default {
   mounted() {
     if (this.deviceId) {
       this.deviceService.getDevice(this.deviceId, (result) => {
-        this.device = result;
-
+        this.device = result.data;
       }, (error) => {
         console.log("获取设备信息失败")
         console.error(error)
       })
     }
-    this.initData();
-
+    this.$nextTick(() => {
+      this.initData();
+    })
   },
   destroyed() {
     this.$destroy('videojs');
@@ -468,8 +492,8 @@ export default {
           }
         }).then((res) => {
           if (res.data.code === 0) {
-            this.total = res.data.total;
-            this.deviceChannelList = res.data.list;
+            this.total = res.data.data.total;
+            this.deviceChannelList = res.data.data.list;
             // 防止出现表格错位
             this.$nextTick(() => {
               this.$refs.channelListTable.doLayout();
