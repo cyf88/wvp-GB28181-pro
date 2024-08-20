@@ -411,4 +411,13 @@ public class ZLMRESTfulUtils {
         param.put("name", fileName);
         return sendPost(mediaServerItem, "deleteRecordDirectory",param, null);
     }
+
+    public JSONObject loadMP4File(MediaServer mediaServerItem, String app, String stream, String filePath) {
+        Map<String, Object> param = new HashMap<>(1);
+        param.put("vhost", "__defaultVhost__");
+        param.put("app", app);
+        param.put("stream", stream);
+        param.put("file_path", filePath);
+        return sendPost(mediaServerItem, "loadMP4File",param, null);
+    }
 }

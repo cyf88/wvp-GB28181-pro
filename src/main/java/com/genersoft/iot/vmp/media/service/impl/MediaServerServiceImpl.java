@@ -96,12 +96,13 @@ public class MediaServerServiceImpl implements IMediaServerService {
     @Async("taskExecutor")
     @org.springframework.context.event.EventListener
     public void onApplicationEvent(MediaArrivalEvent event) {
-        if ("rtsp".equals(event.getSchema())) {
+        if ("rtsp".equals(event.getSchema()) || "ts".equals(event.getSchema())) {
             logger.info("流变化：注册 app->{}, stream->{}", event.getApp(), event.getStream());
             addCount(event.getMediaServer().getId());
             String type = OriginType.values()[event.getMediaInfo().getOriginType()].getType();
             redisCatchStorage.addStream(event.getMediaServer(), type, event.getApp(), event.getStream(), event.getMediaInfo());
         }
+
     }
 
     /**
@@ -897,5 +898,15 @@ public class MediaServerServiceImpl implements IMediaServerService {
         sendRtpItem.setMediaServerId(serverItem.getId());
         sendRtpItem.setRtcp(rtcp);
         return sendRtpItem;
+    }
+
+    @Override
+    public void loadMP4File(MediaServer mediaServer, String app, String stream, String filePath) {
+        IMediaNodeServerService mediaNodeServerService = nodeServerServiceMap.get(mediaServer.getType());
+        if (mediaNodeServerService == null) {
+            logger.info("[loadMP4File] 失败, mediaServer的类型： {}，未找到对应的实现类", mediaServer.getType());
+            throw new ControllerException(ErrorCode.ERROR100.getCode(), "未找到mediaServer对应的实现类");
+        }
+        mediaNodeServerService.loadMP4File(mediaServer, app, stream, filePath);
     }
 }

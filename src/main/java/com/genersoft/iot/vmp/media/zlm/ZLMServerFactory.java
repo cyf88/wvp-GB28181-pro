@@ -264,4 +264,11 @@ public class ZLMServerFactory {
         }
         return result;
     }
+
+    /**
+     * 调用zlm RESTFUL API —— loadMP4File
+     */
+    public JSONObject loadMP4File(MediaServer mediaServerItem, String app, String stream, String filePath) {
+        return zlmresTfulUtils.loadMP4File(mediaServerItem, app, stream, filePath);
+    }
 }

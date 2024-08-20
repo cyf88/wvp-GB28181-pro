@@ -147,4 +147,6 @@ public interface IMediaServerService {
 
     SendRtpItem createSendRtpItem(MediaServer serverItem, String ip, int port, String ssrc, String platformId,
                                   String app, String stream, String channelId, boolean tcp, boolean rtcp);
+
+    void loadMP4File(MediaServer mediaServer, String app, String stream, String filePath);
 }

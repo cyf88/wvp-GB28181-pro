@@ -58,4 +58,6 @@ public interface IMediaNodeServerService {
     void startSendRtpPassive(MediaServer mediaServer, SendRtpItem sendRtpItem, Integer timeout);
 
     void startSendRtpStream(MediaServer mediaServer, SendRtpItem sendRtpItem);
+
+    void loadMP4File(MediaServer mediaServer, String app, String stream, String filePath);
 }

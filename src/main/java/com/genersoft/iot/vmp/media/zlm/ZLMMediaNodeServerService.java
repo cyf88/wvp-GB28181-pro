@@ -206,7 +206,9 @@ public class ZLMMediaNodeServerService implements IMediaNodeServerService {
 
     @Override
     public MediaInfo getMediaInfo(MediaServer mediaServer, String app, String stream) {
-        JSONObject jsonObject = zlmresTfulUtils.getMediaInfo(mediaServer, app, "rtsp", stream);
+        //JSONObject jsonObject = zlmresTfulUtils.getMediaInfo(mediaServer, app, "rtsp", stream);
+        //cyf
+        JSONObject jsonObject = zlmresTfulUtils.getMediaInfo(mediaServer, app, "ts", stream);
         if (jsonObject.getInteger("code") != 0) {
             return null;
         }
@@ -355,6 +357,15 @@ public class ZLMMediaNodeServerService implements IMediaNodeServerService {
         param.put("dst_port", sendRtpItem.getPort());
         JSONObject jsonObject = zlmresTfulUtils.startSendRtp(mediaServer, param);
         if (jsonObject == null || jsonObject.getInteger("code") != 0 ) {
+            throw new ControllerException(jsonObject.getInteger("code"), jsonObject.getString("msg"));
+        }
+    }
+
+    @Override
+    public void loadMP4File(MediaServer mediaServer, String app, String stream, String filePath) {
+
+        JSONObject jsonObject = zlmresTfulUtils.loadMP4File(mediaServer, app, stream, filePath);
+        if (jsonObject == null || jsonObject.getInteger("code") != 0) {
             throw new ControllerException(jsonObject.getInteger("code"), jsonObject.getString("msg"));
         }
     }

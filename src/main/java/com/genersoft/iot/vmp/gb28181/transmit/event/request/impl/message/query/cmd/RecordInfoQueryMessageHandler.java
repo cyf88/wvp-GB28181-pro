@@ -9,9 +9,15 @@ import com.genersoft.iot.vmp.gb28181.transmit.cmd.impl.SIPCommanderFroPlatform;
 import com.genersoft.iot.vmp.gb28181.transmit.event.request.SIPRequestProcessorParent;
 import com.genersoft.iot.vmp.gb28181.transmit.event.request.impl.message.IMessageHandler;
 import com.genersoft.iot.vmp.gb28181.transmit.event.request.impl.message.query.QueryMessageHandler;
+import com.genersoft.iot.vmp.media.bean.MediaServer;
+import com.genersoft.iot.vmp.media.service.IMediaServerService;
+import com.genersoft.iot.vmp.service.ICloudRecordService;
+import com.genersoft.iot.vmp.service.bean.CloudRecordItem;
+import com.genersoft.iot.vmp.storager.dao.CloudRecordServiceMapper;
 import com.genersoft.iot.vmp.utils.DateUtil;
 import com.genersoft.iot.vmp.storager.IVideoManagerStorage;
 import com.genersoft.iot.vmp.storager.dao.dto.ChannelSourceInfo;
+import com.github.pagehelper.PageInfo;
 import gov.nist.javax.sip.message.SIPRequest;
 import org.dom4j.Element;
 import org.slf4j.Logger;
@@ -25,6 +31,7 @@ import javax.sip.RequestEvent;
 import javax.sip.SipException;
 import javax.sip.message.Response;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -53,6 +60,12 @@ public class RecordInfoQueryMessageHandler extends SIPRequestProcessorParent imp
 
     @Autowired
     private EventPublisher publisher;
+
+    @Autowired
+    private IMediaServerService mediaServerService;
+
+    @Autowired
+    private ICloudRecordService cloudRecordService;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -95,7 +108,68 @@ public class RecordInfoQueryMessageHandler extends SIPRequestProcessorParent imp
         // 确认是直播还是国标， 国标直接请求下级，直播请求录像管理服务
         List<ChannelSourceInfo> channelSources = storager.getChannelSource(parentPlatform.getServerGBId(), channelId);
 
-        if (channelSources.get(0).getCount() > 0) { // 国标
+        if (channelSources.get(0).getCount() > 0 && 1==1) {
+            //cyf
+            try {
+                //从数据库里获取存储的文件内容
+                List<MediaServer>  mediaServerItems = mediaServerService.getAllOnlineList();
+                DeviceChannel deviceChannel = storager.queryChannelInParentPlatform(parentPlatform.getServerGBId(), channelId);
+                String stream = deviceChannel.getDeviceId()+"_"+deviceChannel.getChannelId();
+                PageInfo<CloudRecordItem> cloudList = cloudRecordService.getList(
+                        1,
+                        1000,
+                        null,
+                        "rtp",
+                        stream,
+                        startTime.replaceAll("T"," "),
+                        endTime.replaceAll("T"," "),
+                        mediaServerItems);
+                responseAck(request, Response.OK);
+
+               // for(CloudRecordItem cloudRecordItem : cloudList.getList()){
+                //每两条记录合并发一个message
+                int fregment = 2;
+                RecordInfo recordInfo = new RecordInfo();
+                recordInfo.setChannelId(deviceChannel.getChannelId());
+                recordInfo.setDeviceId(deviceChannel.getDeviceId());
+                recordInfo.setName(deviceChannel.getName());
+                recordInfo.setSn(String.valueOf(sn));
+                recordInfo.setSumNum(cloudList.getList().size());
+                if (cloudList.getList().size() == 0) {
+                    //recordInfo.setSumNum(0);
+                    cmderFroPlatform.recordInfo(deviceChannel, parentPlatform, request.getFromTag(), recordInfo);
+                } else {
+
+                    for (int i=0; i<cloudList.getList().size(); i+=fregment) {
+                        List<RecordItem> recordList = new ArrayList<>();
+                        for (int j=0; j<fregment&&((i+j)<cloudList.getList().size()); j++) {
+                            CloudRecordItem cloudRecord = cloudList.getList().get(i + j);
+                            RecordItem record = new RecordItem();
+                            //record.setAddress(cloudRecord.getFilePath());
+                            //record.setRecorderId("1");
+                            record.setDeviceId(deviceChannel.getChannelId());
+                            record.setName(deviceChannel.getName());
+                            record.setStartTime(DateUtil.timestampMsTo_yyyy_MM_dd_HH_mm_ss(cloudRecord.getStartTime()));
+                            record.setEndTime(DateUtil.timestampMsTo_yyyy_MM_dd_HH_mm_ss(cloudRecord.getEndTime()));
+                            record.setFileSize(String.valueOf(cloudRecord.getFileSize()));
+                            record.setType("2");
+                            recordList.add(record);
+                           // recordInfo.setSumNum(j+1);
+                        }
+
+                        recordInfo.setRecordList(recordList);
+                        cmderFroPlatform.recordInfo(deviceChannel, parentPlatform, request.getFromTag(), recordInfo);
+                    }
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error("[命令发送失败] 录像查询回复: {}", e.getMessage());
+            }
+
+        }
+        else if (channelSources.get(0).getCount() > 0) { // 国标
+
             // 向国标设备请求录像数据
             Device device = storager.queryVideoDeviceByPlatformIdAndChannelId(parentPlatform.getServerGBId(), channelId);
             DeviceChannel deviceChannel = storager.queryChannelInParentPlatform(parentPlatform.getServerGBId(), channelId);
